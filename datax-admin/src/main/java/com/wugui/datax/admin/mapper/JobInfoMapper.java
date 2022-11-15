@@ -54,7 +54,7 @@ public interface JobInfoMapper {
 
     int incrementTimeUpdate(@Param("id") int id, @Param("incStartTime") Date incStartTime);
 
-	public int updateLastHandleCode(@Param("id") int id,@Param("lastHandleCode")int lastHandleCode);
+	int updateLastHandleCode(@Param("id") int id,@Param("lastHandleCode")int lastHandleCode);
 
     void incrementIdUpdate(@Param("id") int id, @Param("incStartId")Long incStartId);
 }

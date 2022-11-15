@@ -13,15 +13,20 @@ import com.wugui.datax.admin.core.trigger.TriggerTypeEnum;
 import com.wugui.datax.admin.core.util.I18nUtil;
 import com.wugui.datax.admin.entity.JobInfo;
 import com.wugui.datax.admin.entity.JobLog;
+import com.wugui.datax.admin.entity.JobMax;
 import com.wugui.datax.admin.mapper.JobInfoMapper;
 import com.wugui.datax.admin.mapper.JobLogMapper;
+import com.wugui.datax.admin.mapper.JobMaxMapper;
 import com.wugui.datax.admin.mapper.JobRegistryMapper;
+import com.wugui.datax.admin.tool.database.GainLinkWrite;
+import com.wugui.datax.admin.util.AESUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.List;
@@ -39,6 +44,8 @@ public class AdminBizImpl implements AdminBiz {
     private JobInfoMapper jobInfoMapper;
     @Resource
     private JobRegistryMapper jobRegistryMapper;
+    @Resource
+    private JobMaxMapper jobMaxMapper;
 
     @Override
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
@@ -71,24 +78,24 @@ public class AdminBizImpl implements AdminBiz {
         // valid log item
         JobLog log = jobLogMapper.load(handleCallbackParam.getLogId());
         if (log == null) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "log item not found.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "log item not found.");
         }
         if (log.getHandleCode() > 0) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "log repeate callback.");     // avoid repeat callback, trigger child job etc
+            return new ReturnT<>(ReturnT.FAIL_CODE, "log repeate callback.");     // avoid repeat callback, trigger child job etc
         }
 
         // trigger success, to trigger child job
-        String callbackMsg = null;
+        StringBuilder callbackMsg = null;
         int resultCode = handleCallbackParam.getExecuteResult().getCode();
 
         if (IJobHandler.SUCCESS.getCode() == resultCode) {
 
             JobInfo jobInfo = jobInfoMapper.loadById(log.getJobId());
-
+            //TODO 更新下次的开始时间
             updateIncrementParam(log, jobInfo.getIncrementType());
 
             if (jobInfo != null && jobInfo.getChildJobId() != null && jobInfo.getChildJobId().trim().length() > 0) {
-                callbackMsg = "<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>" + I18nUtil.getString("jobconf_trigger_child_run") + "<<<<<<<<<<< </span><br>";
+                callbackMsg = new StringBuilder("<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>" + I18nUtil.getString("jobconf_trigger_child_run") + "<<<<<<<<<<< </span><br>");
 
                 String[] childJobIds = jobInfo.getChildJobId().split(",");
                 for (int i = 0; i < childJobIds.length; i++) {
@@ -99,17 +106,17 @@ public class AdminBizImpl implements AdminBiz {
                         ReturnT<String> triggerChildResult = ReturnT.SUCCESS;
 
                         // add msg
-                        callbackMsg += MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg1"),
+                        callbackMsg.append(MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg1"),
                                 (i + 1),
                                 childJobIds.length,
                                 childJobIds[i],
                                 (triggerChildResult.getCode() == ReturnT.SUCCESS_CODE ? I18nUtil.getString("system_success") : I18nUtil.getString("system_fail")),
-                                triggerChildResult.getMsg());
+                                triggerChildResult.getMsg()));
                     } else {
-                        callbackMsg += MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg2"),
+                        callbackMsg.append(MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg2"),
                                 (i + 1),
                                 childJobIds.length,
-                                childJobIds[i]);
+                                childJobIds[i]));
                     }
                 }
 
@@ -122,7 +129,7 @@ public class AdminBizImpl implements AdminBiz {
         }
 
         // handle msg
-        StringBuffer handleMsg = new StringBuffer();
+        StringBuilder handleMsg = new StringBuilder();
         if (log.getHandleMsg() != null) {
             handleMsg.append(log.getHandleMsg()).append("<br>");
         }
@@ -134,7 +141,7 @@ public class AdminBizImpl implements AdminBiz {
         }
 
         if (handleMsg.length() > 15000) {
-            handleMsg = new StringBuffer(handleMsg.substring(0, 15000));  // text最大64kb 避免长度过长
+            handleMsg = new StringBuilder(handleMsg.substring(0, 15000));  // text最大64kb 避免长度过长
         }
 
         // success, save log
@@ -148,9 +155,27 @@ public class AdminBizImpl implements AdminBiz {
         return ReturnT.SUCCESS;
     }
 
+    /**
+     * 更新下次开始时间
+     */
     private void updateIncrementParam(JobLog log, Integer incrementType) {
+        JobMax jobMax = jobMaxMapper.findByJobInfoId(log.getJobId());
+        if (jobMax != null) {
+            String username = AESUtil.decrypt(jobMax.getJdbcUsername());
+            String password = AESUtil.decrypt(jobMax.getJdbcPassword());
+            if (IncrementTypeEnum.TIME.getCode() == incrementType) {
+                Timestamp timestamp = GainLinkWrite.maxTimestamp(jobMax.getJdbcDriverClass(),
+                        jobMax.getJdbcUrl(), username, password, jobMax.getFieldName(),
+                        jobMax.getTableName());
+                if (timestamp != null) {
+                    jobInfoMapper.incrementTimeUpdate(log.getJobId(), new Date(timestamp.getTime()));
+                }
+            }
+            return;
+        }
+
         if (IncrementTypeEnum.ID.getCode() == incrementType) {
-            jobInfoMapper.incrementIdUpdate(log.getJobId(),log.getMaxId());
+            jobInfoMapper.incrementIdUpdate(log.getJobId(), log.getMaxId());
         } else if (IncrementTypeEnum.TIME.getCode() == incrementType) {
             jobInfoMapper.incrementTimeUpdate(log.getJobId(), log.getTriggerTime());
         }
@@ -172,7 +197,7 @@ public class AdminBizImpl implements AdminBiz {
         if (!StringUtils.hasText(registryParam.getRegistryGroup())
                 || !StringUtils.hasText(registryParam.getRegistryKey())
                 || !StringUtils.hasText(registryParam.getRegistryValue())) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "Illegal Argument.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "Illegal Argument.");
         }
 
         int ret = jobRegistryMapper.registryUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(),
@@ -194,7 +219,7 @@ public class AdminBizImpl implements AdminBiz {
         if (!StringUtils.hasText(registryParam.getRegistryGroup())
                 || !StringUtils.hasText(registryParam.getRegistryKey())
                 || !StringUtils.hasText(registryParam.getRegistryValue())) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "Illegal Argument.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "Illegal Argument.");
         }
 
         int ret = jobRegistryMapper.registryDelete(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue());

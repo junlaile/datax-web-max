@@ -46,7 +46,7 @@ public class BuildCommand {
         }
         cmdArr.add(tmpFilePath);
         cmdArr.add(buildDataXCustomParam(tgParam));
-        return cmdArr.toArray(new String[cmdArr.size()]);
+        return cmdArr.toArray(new String[0]);
     }
 
     private static String buildDataXCustomParam(TriggerParam tgParam) {

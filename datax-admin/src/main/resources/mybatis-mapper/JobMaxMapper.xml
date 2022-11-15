@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wugui.datax.admin.mapper.JobMaxMapper">
+    <resultMap id="BaseResultMap" type="com.wugui.datax.admin.entity.JobMax">
+        <!--@mbg.generated-->
+        <!--@Table job_max-->
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="job_info_id" jdbcType="INTEGER" property="jobInfoId"/>
+        <result column="field_name" jdbcType="VARCHAR" property="fieldName"/>
+        <result column="table_name" jdbcType="VARCHAR" property="tableName"/>
+        <result column="jdbc_url" jdbcType="VARCHAR" property="jdbcUrl"/>
+        <result column="jdbc_driver_class" jdbcType="VARCHAR" property="jdbcDriverClass"/>
+        <result column="jdbc_username" jdbcType="VARCHAR" property="jdbcUsername"/>
+        <result column="jdbc_password" jdbcType="VARCHAR" property="jdbcPassword"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        id,
+        job_info_id,
+        field_name,
+        `table_name`,
+        jdbc_url,
+        jdbc_driver_class,
+        jdbc_username,
+        jdbc_password,
+        create_time
+    </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        <!--@mbg.generated-->
+        select
+        <include refid="Base_Column_List"/>
+        from job_max
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        <!--@mbg.generated-->
+        delete
+        from job_max
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.wugui.datax.admin.entity.JobMax"
+            useGeneratedKeys="true">
+        <!--@mbg.generated-->
+        insert into job_max (job_info_id, field_name, `table_name`,
+                             jdbc_url, jdbc_driver_class, jdbc_username,
+                             jdbc_password, create_time)
+        values (#{jobInfoId,jdbcType=INTEGER}, #{fieldName,jdbcType=VARCHAR}, #{tableName,jdbcType=VARCHAR},
+                #{jdbcUrl,jdbcType=VARCHAR}, #{jdbcDriverClass,jdbcType=VARCHAR}, #{jdbcUsername,jdbcType=VARCHAR},
+                #{jdbcPassword,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.wugui.datax.admin.entity.JobMax"
+            useGeneratedKeys="true">
+        <!--@mbg.generated-->
+        insert into job_max
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="jobInfoId != null">
+                job_info_id,
+            </if>
+            <if test="fieldName != null">
+                field_name,
+            </if>
+            <if test="tableName != null">
+                `table_name`,
+            </if>
+            <if test="jdbcUrl != null">
+                jdbc_url,
+            </if>
+            <if test="jdbcDriverClass != null">
+                jdbc_driver_class,
+            </if>
+            <if test="jdbcUsername != null">
+                jdbc_username,
+            </if>
+            <if test="jdbcPassword != null">
+                jdbc_password,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="jobInfoId != null">
+                #{jobInfoId,jdbcType=INTEGER},
+            </if>
+            <if test="fieldName != null">
+                #{fieldName,jdbcType=VARCHAR},
+            </if>
+            <if test="tableName != null">
+                #{tableName,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcUrl != null">
+                #{jdbcUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcDriverClass != null">
+                #{jdbcDriverClass,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcUsername != null">
+                #{jdbcUsername,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcPassword != null">
+                #{jdbcPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.wugui.datax.admin.entity.JobMax">
+        <!--@mbg.generated-->
+        update job_max
+        <set>
+            <if test="jobInfoId != null">
+                job_info_id = #{jobInfoId,jdbcType=INTEGER},
+            </if>
+            <if test="fieldName != null">
+                field_name = #{fieldName,jdbcType=VARCHAR},
+            </if>
+            <if test="tableName != null">
+                `table_name` = #{tableName,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcUrl != null">
+                jdbc_url = #{jdbcUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcDriverClass != null">
+                jdbc_driver_class = #{jdbcDriverClass,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcUsername != null">
+                jdbc_username = #{jdbcUsername,jdbcType=VARCHAR},
+            </if>
+            <if test="jdbcPassword != null">
+                jdbc_password = #{jdbcPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.wugui.datax.admin.entity.JobMax">
+        <!--@mbg.generated-->
+        update job_max
+        set job_info_id       = #{jobInfoId,jdbcType=INTEGER},
+            field_name        = #{fieldName,jdbcType=VARCHAR},
+            `table_name`      = #{tableName,jdbcType=VARCHAR},
+            jdbc_url          = #{jdbcUrl,jdbcType=VARCHAR},
+            jdbc_driver_class = #{jdbcDriverClass,jdbcType=VARCHAR},
+            jdbc_username     = #{jdbcUsername,jdbcType=VARCHAR},
+            jdbc_password     = #{jdbcPassword,jdbcType=VARCHAR},
+            create_time       = #{createTime,jdbcType=TIMESTAMP}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+<!--auto generated by MybatisCodeHelper on 2022-11-14-->
+    <select id="findByJobInfoId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from job_max
+        where job_info_id=#{jobInfoId,jdbcType=INTEGER}
+    </select>
+
+<!--auto generated by MybatisCodeHelper on 2022-11-14-->
+    <delete id="deleteByJobInfoId">
+        delete from job_max
+        where job_info_id=#{jobInfoId,jdbcType=INTEGER}
+    </delete>
+</mapper>

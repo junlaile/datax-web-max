@@ -354,3 +354,23 @@ CHANGE COLUMN `author` `user_id` INT(11) NOT NULL COMMENT '修改用户' ;
 
 ALTER TABLE `job_info`
 CHANGE COLUMN `increment_type` `increment_type` TINYINT(4) NULL DEFAULT 0 COMMENT '增量类型' ;
+
+
+-- ----------------------------
+-- Table structure for 更新的最大值
+-- ----------------------------
+create table datax_web.job_max
+(
+    id                int unsigned auto_increment comment '主键'
+        primary key,
+    job_info_id       int                                null comment '任务id',
+    field_name        varchar(200)                       null comment '字段名称',
+    table_name        varchar(200)                       null comment '表名',
+    jdbc_url          varchar(512)                       null comment 'jdbc链接',
+    jdbc_driver_class varchar(512)                       null comment 'jdbc驱动',
+    jdbc_username     varchar(512)                       null comment 'jdbc用户名',
+    jdbc_password     varchar(512)                       null comment 'jdbc密码',
+    create_time       datetime default CURRENT_TIMESTAMP not null
+) comment '获取最大值信息';
+
+

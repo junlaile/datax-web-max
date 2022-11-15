@@ -168,7 +168,7 @@ public class DataxJsonHelper implements DataxJsonInterface {
         } else if (JdbcConstants.MONGODB.equals(datasource)) {
             writerPlugin = new MongoDBWriter();
             buildWriter = this.buildMongoDBWriter();
-        }else if (DB2.equals(datasource)) {
+        } else if (DB2.equals(datasource)) {
             writerPlugin = new DB2Writer();
             buildWriter = this.buildWriter();
         }
@@ -180,9 +180,7 @@ public class DataxJsonHelper implements DataxJsonInterface {
         }
 
         List<String> toColumns = new ArrayList<>();
-        columns.forEach(s -> {
-            toColumns.add(doConvertKeywordsColumn(datasource, s));
-        });
+        columns.forEach(s -> toColumns.add(doConvertKeywordsColumn(datasource, s)));
         return toColumns;
     }
 
@@ -217,8 +215,22 @@ public class DataxJsonHelper implements DataxJsonInterface {
         Map<String, Object> jobMap = Maps.newLinkedHashMap();
         jobMap.put("setting", buildSetting());
         jobMap.put("content", ImmutableList.of(buildContent()));
+        res.put("core",buildCore());
         res.put("job", jobMap);
         return res;
+    }
+
+    @Override
+    public Map<String, Object> buildCore() {
+        Map<String, Object> coreMap = Maps.newLinkedHashMap();
+        Map<String, Object> transportMap = Maps.newLinkedHashMap();
+        Map<String, Object> channelMap = Maps.newLinkedHashMap();
+        Map<String, Object> speedMap = Maps.newLinkedHashMap();
+        speedMap.putAll(ImmutableMap.of("byte", 1048576));
+        channelMap.putAll(ImmutableMap.of("speed", speedMap));
+        transportMap.putAll(ImmutableMap.of("channel", channelMap));
+        coreMap.putAll(ImmutableMap.of("transport", transportMap));
+        return coreMap;
     }
 
     @Override
@@ -291,7 +303,7 @@ public class DataxJsonHelper implements DataxJsonInterface {
         }
         dataxHbasePojo.setColumns(columns);
         dataxHbasePojo.setReaderHbaseConfig(readerDatasource.getZkAdress());
-        String readerTable=!CollectionUtils.isEmpty(readerTables)?readerTables.get(0):Constants.STRING_BLANK;
+        String readerTable = !CollectionUtils.isEmpty(readerTables) ? readerTables.get(0) : Constants.STRING_BLANK;
         dataxHbasePojo.setReaderTable(readerTable);
         dataxHbasePojo.setReaderMode(hbaseReaderDto.getReaderMode());
         dataxHbasePojo.setReaderRange(hbaseReaderDto.getReaderRange());
@@ -358,7 +370,7 @@ public class DataxJsonHelper implements DataxJsonInterface {
         }
         dataxHbasePojo.setColumns(columns);
         dataxHbasePojo.setWriterHbaseConfig(writerDatasource.getZkAdress());
-        String writerTable=!CollectionUtils.isEmpty(writerTables)?writerTables.get(0):Constants.STRING_BLANK;
+        String writerTable = !CollectionUtils.isEmpty(writerTables) ? writerTables.get(0) : Constants.STRING_BLANK;
         dataxHbasePojo.setWriterTable(writerTable);
         dataxHbasePojo.setWriterVersionColumn(hbaseWriterDto.getWriterVersionColumn());
         dataxHbasePojo.setWriterRowkeyColumn(hbaseWriterDto.getWriterRowkeyColumn());

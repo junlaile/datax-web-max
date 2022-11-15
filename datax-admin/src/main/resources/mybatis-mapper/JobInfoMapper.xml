@@ -99,10 +99,49 @@
 		u.username
 	</sql>
 	<select id="pageList" parameterType="java.util.HashMap" resultMap="JobInfo">
-		SELECT <include refid="Base_Column_List" />,<include refid="Project_Column_List" />
+		SELECT t.id,
+		t.job_group,
+		t.job_cron,
+		t.job_desc,
+		t.add_time,
+		t.update_time,
+		t.user_id,
+		t.alarm_email,
+		t.executor_route_strategy,
+		t.executor_handler,
+		t.executor_param,
+		t.executor_block_strategy,
+		t.executor_timeout,
+		t.executor_fail_retry_count,
+		t.glue_type,
+		t.glue_source,
+		t.glue_remark,
+		t.glue_updatetime,
+		t.child_jobid,
+		t.trigger_status,
+		t.trigger_last_time,
+		t.trigger_next_time,
+		t.job_json,
+		ifnull(concat(t.replace_param,' -F',jm.field_name),t.replace_param) as replace_param,
+		t.jvm_param,
+		t.custom_param,
+		t.inc_start_time,
+		t.partition_info,
+		t.last_handle_code,
+		t.replace_param_type,
+		t.project_id,
+		t.reader_table,
+		t.primary_key,
+		t.inc_start_id,
+		t.increment_type,
+		t.datasource_id,
+
+
+		<include refid="Project_Column_List" />
 		FROM job_info AS t
 		INNER JOIN job_project p on t.project_id=p.id
 		INNER JOIN job_user u on t.user_id = u.id
+		left join job_max jm on t.id = jm.job_info_id
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="jobGroup gt 0">
 				AND t.job_group = #{jobGroup}
@@ -131,8 +170,43 @@
 	</select>
 
 	<select id="findAll" parameterType="java.util.HashMap" resultMap="JobInfo">
-		SELECT <include refid="Base_Column_List" />
-		FROM job_info AS t
+		SELECT ji.id,
+			   ji.job_group,
+			   ji.job_cron,
+			   ji.job_desc,
+			   ji.project_id,
+			   ji.add_time,
+			   ji.update_time,
+			   ji.user_id,
+			   ji.alarm_email,
+			   ji.executor_route_strategy,
+			   ji.executor_handler,
+			   ji.executor_param,
+			   ji.executor_block_strategy,
+			   ji.executor_timeout,
+			   ji.executor_fail_retry_count,
+			   ji.glue_type,
+			   ji.glue_source,
+			   ji.glue_remark,
+			   ji.glue_updatetime,
+			   ji.child_jobid,
+			   ji.trigger_status,
+			   ji.trigger_last_time,
+			   ji.trigger_next_time,
+			   ji.job_json,
+			   ifnull(concat(ji.replace_param,' -F',jm.field_name),ji.replace_param) as replace_param,
+			   ji.jvm_param,
+			   ji.inc_start_time,
+			   ji.partition_info,
+			   ji.last_handle_code,
+			   ji.replace_param_type,
+			   ji.reader_table,
+			   ji.primary_key,
+			   ji.inc_start_id,
+			   ji.increment_type,
+			   ji.datasource_id,
+			   ji.custom_param
+		FROM job_info ji left join job_max jm on ji.id = jm.job_info_id
 		ORDER BY job_desc ASC
 	</select>
 

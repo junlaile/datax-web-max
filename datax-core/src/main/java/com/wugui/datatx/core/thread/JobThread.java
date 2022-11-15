@@ -157,7 +157,7 @@ public class JobThread extends Thread {
                         executeResult = IJobHandler.FAIL;
                     } else {
                         executeResult.setMsg(
-                                (executeResult != null && executeResult.getMsg() != null && executeResult.getMsg().length() > 50000)
+                                executeResult.getMsg() != null && executeResult.getMsg().length() > 50000
                                         ? executeResult.getMsg().substring(0, 50000).concat("...")
                                         : executeResult.getMsg());
                         executeResult.setContent(null);    // limit obj size
@@ -191,7 +191,7 @@ public class JobThread extends Thread {
                         TriggerCallbackThread.pushCallBack(new HandleCallbackParam(tgParam.getLogId(), tgParam.getLogDateTime(), executeResult));
                     } else {
                         // is killed
-                        ReturnT<String> stopResult = new ReturnT<String>(ReturnT.FAIL_CODE, stopReason + " [job running, killed]");
+                        ReturnT<String> stopResult = new ReturnT<>(ReturnT.FAIL_CODE, stopReason + " [job running, killed]");
                         TriggerCallbackThread.pushCallBack(new HandleCallbackParam(tgParam.getLogId(), tgParam.getLogDateTime(), stopResult));
                     }
                 }

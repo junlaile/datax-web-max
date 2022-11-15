@@ -1,0 +1,4 @@
+com\wugui\datax\transformer\ComplexTransformer.class
+com\wugui\datax\transformer\Md5Transformer.class
+com\wugui\datax\transformer\ReplaceNewLineSymbolTransformer.class
+com\wugui\datax\transformer\TransformerErrorCode.class

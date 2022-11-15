@@ -1,5 +1,8 @@
 package com.wugui.datax.admin.service.impl;
 
+import java.util.Date;
+
+import com.alibaba.fastjson.JSONObject;
 import com.wugui.datatx.core.biz.model.ReturnT;
 import com.wugui.datatx.core.enums.ExecutorBlockStrategyEnum;
 import com.wugui.datatx.core.glue.GlueTypeEnum;
@@ -10,14 +13,12 @@ import com.wugui.datax.admin.core.thread.JobScheduleHelper;
 import com.wugui.datax.admin.core.util.I18nUtil;
 import com.wugui.datax.admin.dto.DataXBatchJsonBuildDto;
 import com.wugui.datax.admin.dto.DataXJsonBuildDto;
-import com.wugui.datax.admin.entity.JobGroup;
-import com.wugui.datax.admin.entity.JobInfo;
-import com.wugui.datax.admin.entity.JobLogReport;
-import com.wugui.datax.admin.entity.JobTemplate;
+import com.wugui.datax.admin.entity.*;
 import com.wugui.datax.admin.mapper.*;
 import com.wugui.datax.admin.service.DatasourceQueryService;
 import com.wugui.datax.admin.service.DataxJsonService;
 import com.wugui.datax.admin.service.JobService;
+import com.wugui.datax.admin.tool.database.DataBaseType;
 import com.wugui.datax.admin.util.DateFormatUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -38,7 +39,7 @@ import java.util.*;
  */
 @Service
 public class JobServiceImpl implements JobService {
-    private static Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
 
     @Resource
     private JobGroupMapper jobGroupMapper;
@@ -56,19 +57,24 @@ public class JobServiceImpl implements JobService {
     private JobTemplateMapper jobTemplateMapper;
     @Resource
     private DataxJsonService dataxJsonService;
+    @Resource
+    private JobMaxMapper jobMaxMapper;
 
     @Override
     public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String glueType, int userId, Integer[] projectIds) {
 
         // page list
         List<JobInfo> list = jobInfoMapper.pageList(start, length, jobGroup, triggerStatus, jobDesc, glueType, userId, projectIds);
-        int list_count = jobInfoMapper.pageListCount(start, length, jobGroup, triggerStatus, jobDesc, glueType, userId, projectIds);
+        int listCount = jobInfoMapper.pageListCount(start, length, jobGroup, triggerStatus, jobDesc, glueType, userId, projectIds);
 
         // package result
         Map<String, Object> maps = new HashMap<>();
-        maps.put("recordsTotal", list_count);        // 总记录数
-        maps.put("recordsFiltered", list_count);    // 过滤后的总记录数
-        maps.put("data", list);                    // 分页列表
+        // 总记录数
+        maps.put("recordsTotal", listCount);
+        // 过滤后的总记录数
+        maps.put("recordsFiltered", listCount);
+        // 分页列表
+        maps.put("data", list);
         return maps;
     }
 
@@ -79,7 +85,7 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public ReturnT<String> add(JobInfo jobInfo) {
-        // valid
+        // valid 参数校验
         JobGroup group = jobGroupMapper.load(jobInfo.getJobGroup());
         if (group == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose") + I18nUtil.getString("jobinfo_field_jobgroup")));
@@ -93,7 +99,7 @@ public class JobServiceImpl implements JobService {
         if (jobInfo.getJobDesc() == null || jobInfo.getJobDesc().trim().length() == 0) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + I18nUtil.getString("jobinfo_field_jobdesc")));
         }
-        if (jobInfo.getUserId() == 0 ) {
+        if (jobInfo.getUserId() == 0) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + I18nUtil.getString("jobinfo_field_author")));
         }
         if (ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null) == null) {
@@ -120,33 +126,30 @@ public class JobServiceImpl implements JobService {
             jobInfo.setGlueSource(jobInfo.getGlueSource().replaceAll("\r", ""));
         }
 
-        // ChildJobId valid
+        // ChildJobId valid 判断子任务
         if (jobInfo.getChildJobId() != null && jobInfo.getChildJobId().trim().length() > 0) {
             String[] childJobIds = jobInfo.getChildJobId().split(",");
             for (String childJobIdItem : childJobIds) {
                 if (StringUtils.isNotBlank(childJobIdItem) && isNumeric(childJobIdItem) && Integer.parseInt(childJobIdItem) > 0) {
                     JobInfo childJobInfo = jobInfoMapper.loadById(Integer.parseInt(childJobIdItem));
                     if (childJobInfo == null) {
-                        return new ReturnT<String>(ReturnT.FAIL_CODE,
+                        return new ReturnT<>(ReturnT.FAIL_CODE,
                                 MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId") + "({0})" + I18nUtil.getString("system_not_found")), childJobIdItem));
                     }
                 } else {
-                    return new ReturnT<String>(ReturnT.FAIL_CODE,
+                    return new ReturnT<>(ReturnT.FAIL_CODE,
                             MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId") + "({0})" + I18nUtil.getString("system_invalid")), childJobIdItem));
                 }
             }
-
             // join , avoid "xxx,,"
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
             for (String item : childJobIds) {
-                temp += item + ",";
+                temp.append(item).append(",");
             }
-            temp = temp.substring(0, temp.length() - 1);
-
-            jobInfo.setChildJobId(temp);
+            temp = new StringBuilder(temp.substring(0, temp.length() - 1));
+            jobInfo.setChildJobId(temp.toString());
         }
-
-        // add in db
+        // add in db 添加数据库在这里
         jobInfo.setAddTime(new Date());
         jobInfo.setJobJson(jobInfo.getJobJson());
         jobInfo.setUpdateTime(new Date());
@@ -155,7 +158,7 @@ public class JobServiceImpl implements JobService {
         if (jobInfo.getId() < 1) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add") + I18nUtil.getString("system_fail")));
         }
-
+        saveJobMax(jobInfo);
         return new ReturnT<>(String.valueOf(jobInfo.getId()));
     }
 
@@ -171,7 +174,7 @@ public class JobServiceImpl implements JobService {
     @Override
     public ReturnT<String> update(JobInfo jobInfo) {
 
-        // valid
+        // valid 参数校验
         if (!CronExpression.isValidExpression(jobInfo.getJobCron())) {
             return new ReturnT<>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_invalid"));
         }
@@ -183,7 +186,7 @@ public class JobServiceImpl implements JobService {
         }
 
         if (jobInfo.getProjectId() == 0) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + I18nUtil.getString("jobinfo_field_jobproject")));
+            return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + I18nUtil.getString("jobinfo_field_jobproject")));
         }
         if (jobInfo.getUserId() == 0) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + I18nUtil.getString("jobinfo_field_author")));
@@ -195,30 +198,30 @@ public class JobServiceImpl implements JobService {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy") + I18nUtil.getString("system_invalid")));
         }
 
-        // ChildJobId valid
+        // ChildJobId valid 看
         if (jobInfo.getChildJobId() != null && jobInfo.getChildJobId().trim().length() > 0) {
             String[] childJobIds = jobInfo.getChildJobId().split(",");
             for (String childJobIdItem : childJobIds) {
                 if (childJobIdItem != null && childJobIdItem.trim().length() > 0 && isNumeric(childJobIdItem)) {
                     JobInfo childJobInfo = jobInfoMapper.loadById(Integer.parseInt(childJobIdItem));
                     if (childJobInfo == null) {
-                        return new ReturnT<String>(ReturnT.FAIL_CODE,
+                        return new ReturnT<>(ReturnT.FAIL_CODE,
                                 MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId") + "({0})" + I18nUtil.getString("system_not_found")), childJobIdItem));
                     }
                 } else {
-                    return new ReturnT<String>(ReturnT.FAIL_CODE,
+                    return new ReturnT<>(ReturnT.FAIL_CODE,
                             MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId") + "({0})" + I18nUtil.getString("system_invalid")), childJobIdItem));
                 }
             }
 
             // join , avoid "xxx,,"
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
             for (String item : childJobIds) {
-                temp += item + ",";
+                temp.append(item).append(",");
             }
-            temp = temp.substring(0, temp.length() - 1);
+            temp = new StringBuilder(temp.substring(0, temp.length() - 1));
 
-            jobInfo.setChildJobId(temp);
+            jobInfo.setChildJobId(temp.toString());
         }
 
         // group valid
@@ -239,12 +242,12 @@ public class JobServiceImpl implements JobService {
             try {
                 Date nextValidTime = new CronExpression(jobInfo.getJobCron()).getNextValidTimeAfter(new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
                 if (nextValidTime == null) {
-                    return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_never_fire"));
+                    return new ReturnT<>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_never_fire"));
                 }
                 nextTriggerTime = nextValidTime.getTime();
             } catch (ParseException e) {
                 logger.error(e.getMessage(), e);
-                return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_invalid") + " | " + e.getMessage());
+                return new ReturnT<>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_invalid") + " | " + e.getMessage());
             }
         }
 
@@ -263,9 +266,31 @@ public class JobServiceImpl implements JobService {
             exists_jobInfo.setJobJson(null);
         }
         exists_jobInfo.setGlueUpdatetime(new Date());
+        String replaceParam = jobInfo.getReplaceParam();
+        String fieldName = null;
+        if (StringUtils.isNotBlank(replaceParam)){
+            String[] split = StringUtils.split(replaceParam, ' ');
+            StringBuilder sb = new StringBuilder();
+            for (String str : split) {
+                if (StringUtils.startsWith(str, "-F")) {
+                    fieldName = str.substring(2);
+                    continue;
+                }
+                if (StringUtils.isNotBlank(sb)) {
+                    sb.append(" ");
+                }
+                sb.append(str);
+            }
+            if (StringUtils.isBlank(sb)){
+                exists_jobInfo.setReplaceParam(null);
+            }else {
+                exists_jobInfo.setReplaceParam(sb.toString());
+            }
+        }
         jobInfoMapper.update(exists_jobInfo);
-
-
+        if (StringUtils.isNotBlank(fieldName)) {
+            updateJobMax(exists_jobInfo, fieldName);
+        }
         return ReturnT.SUCCESS;
     }
 
@@ -279,6 +304,7 @@ public class JobServiceImpl implements JobService {
         jobInfoMapper.delete(id);
         jobLogMapper.delete(id);
         jobLogGlueMapper.deleteByJobId(id);
+        jobMaxMapper.deleteByJobInfoId(id);
         return ReturnT.SUCCESS;
     }
 
@@ -287,16 +313,20 @@ public class JobServiceImpl implements JobService {
         JobInfo xxlJobInfo = jobInfoMapper.loadById(id);
 
         // next trigger time (5s后生效，避开预读周期)
-        long nextTriggerTime = 0;
+        long nextTriggerTime;
         try {
-            Date nextValidTime = new CronExpression(xxlJobInfo.getJobCron()).getNextValidTimeAfter(new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
+            CronExpression cronExpression = new CronExpression(xxlJobInfo.getJobCron());
+            Date offsetDate = new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS);
+            //偏移5秒钟开始执行
+            Date nextValidTime = cronExpression.getNextValidTimeAfter(offsetDate);
             if (nextValidTime == null) {
-                return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_never_fire"));
+                return new ReturnT<>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_never_fire"));
             }
             nextTriggerTime = nextValidTime.getTime();
         } catch (ParseException e) {
             logger.error(e.getMessage(), e);
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_invalid") + " | " + e.getMessage());
+            return new ReturnT<>(ReturnT.FAIL_CODE,
+                    I18nUtil.getString("jobinfo_field_cron_invalid") + " | " + e.getMessage());
         }
 
         xxlJobInfo.setTriggerStatus(1);
@@ -358,10 +388,10 @@ public class JobServiceImpl implements JobService {
     @Override
     public ReturnT<Map<String, Object>> chartInfo() {
         // process
-        List<String> triggerDayList = new ArrayList<String>();
-        List<Integer> triggerDayCountRunningList = new ArrayList<Integer>();
-        List<Integer> triggerDayCountSucList = new ArrayList<Integer>();
-        List<Integer> triggerDayCountFailList = new ArrayList<Integer>();
+        List<String> triggerDayList = new ArrayList<>();
+        List<Integer> triggerDayCountRunningList = new ArrayList<>();
+        List<Integer> triggerDayCountSucList = new ArrayList<>();
+        List<Integer> triggerDayCountFailList = new ArrayList<>();
         int triggerCountRunningTotal = 0;
         int triggerCountSucTotal = 0;
         int triggerCountFailTotal = 0;
@@ -461,5 +491,113 @@ public class JobServiceImpl implements JobService {
             jobInfoMapper.save(jobInfo);
         }
         return ReturnT.SUCCESS;
+    }
+
+    /**
+     * 解析jobInfo并将其保存到获取最大值的数据中
+     *
+     * @param jobInfo 参数
+     */
+    private void saveJobMax(JobInfo jobInfo) {
+        JobMax jobMax = new JobMax();
+        jobMax.setJobInfoId(jobInfo.getId());
+        //解析JSON
+        String jobJson = jobInfo.getJobJson();
+        HashMap<String, String> map = analysisJobJson(jobJson);
+
+        jobMax.setTableName(map.get("tableName"));
+        jobMax.setJdbcUrl(map.get("jdbcUrl"));
+
+        DataBaseType[] values = DataBaseType.values();
+        String jdbcDriverClass = null;
+        for (DataBaseType value : values) {
+            if (StringUtils.startsWith(map.get("writerName"), value.getTypeName())) {
+                jdbcDriverClass = value.getDriverClassName();
+                break;
+            }
+        }
+        jobMax.setJdbcDriverClass(jdbcDriverClass);
+        jobMax.setJdbcUsername(map.get("jdbcUsername"));
+        jobMax.setJdbcPassword(map.get("jdbcPassword"));
+        jobMax.setCreateTime(new Date());
+
+        jobMaxMapper.insertSelective(jobMax);
+    }
+
+    /**
+     * 解析jobInfo并将其更新到获取最大值的数据中
+     */
+    private void updateJobMax(JobInfo jobInfo, String fieldName) {
+        JobMax jobMax = jobMaxMapper.findByJobInfoId(jobInfo.getId());
+        if (jobMax != null) {
+            HashMap<String, String> map = analysisJobJson(jobInfo.getJobJson());
+            jobMax.setJobInfoId(jobInfo.getId());
+            jobMax.setFieldName(fieldName);
+            String tableName = map.get("tableName");
+            if (StringUtils.isNotBlank(tableName)) {
+                jobMax.setTableName(tableName);
+            }
+            String jdbcUrl = map.get("jdbcUrl");
+            if (StringUtils.isNotBlank(jdbcUrl)) {
+                jobMax.setJdbcUrl(jdbcUrl);
+            }
+
+            String writerName = map.get("writerName");
+            String jdbcDriverClass = null;
+            if (StringUtils.isNotBlank(writerName)) {
+                DataBaseType[] values = DataBaseType.values();
+                for (DataBaseType value : values) {
+                    if (StringUtils.startsWith(writerName, value.getTypeName())) {
+                        jdbcDriverClass = value.getDriverClassName();
+                        break;
+                    }
+                }
+            }
+            if (StringUtils.isNotBlank(jdbcDriverClass)) {
+                jobMax.setJdbcDriverClass(jdbcDriverClass);
+            }
+            String jdbcUsername = map.get("jdbcUsername");
+            if (StringUtils.isNotBlank(jdbcUsername)) {
+                jobMax.setJdbcUsername(jdbcUsername);
+            }
+            String jdbcPassword = map.get("jdbcPassword");
+            if (StringUtils.isNotBlank(jdbcPassword)) {
+                jobMax.setJdbcPassword(jdbcPassword);
+            }
+            jobMaxMapper.updateByPrimaryKeySelective(jobMax);
+        }
+
+    }
+
+    /**
+     * 解析jobJson
+     *
+     * @param jobJson json
+     * @return 获取后的参数
+     */
+    private HashMap<String, String> analysisJobJson(String jobJson) {
+        JSONObject jsonObject = JSONObject.parseObject(jobJson);
+
+        HashMap<String, String> map = new HashMap<>();
+
+        JSONObject jobJsonObject = jsonObject.getJSONObject("job");
+        JSONObject contentJsonObject = jobJsonObject.getJSONArray("content").getJSONObject(0);
+        JSONObject writerJsonObject = contentJsonObject.getJSONObject("writer");
+        JSONObject parameterJsonObject = writerJsonObject.getJSONObject("parameter");
+        String writerName = writerJsonObject.getString("name");
+        String jdbcUsername = parameterJsonObject.getString("username");
+        String jdbcPassword = parameterJsonObject.getString("password");
+
+        JSONObject connectionJsonObject = parameterJsonObject.getJSONArray("connection")
+                .getJSONObject(0);
+        String tableName = connectionJsonObject.getJSONArray("table").getString(0);
+        String jdbcUrl = connectionJsonObject.getString("jdbcUrl");
+
+        map.put("writerName", writerName);
+        map.put("jdbcUsername", jdbcUsername);
+        map.put("jdbcPassword", jdbcPassword);
+        map.put("tableName", tableName);
+        map.put("jdbcUrl", jdbcUrl);
+        return map;
     }
 }

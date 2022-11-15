@@ -63,7 +63,12 @@ public class ExecutorJobHandler extends IJobHandler {
 
         try {
             String[] cmdarrayFinal = buildDataXExecutorCmd(trigger, tmpFilePath,dataXPyPath);
-            final Process process = Runtime.getRuntime().exec(cmdarrayFinal);
+            StringBuilder sb = new StringBuilder();
+            for (String arr : cmdarrayFinal) {
+                sb.append(arr).append(" ");
+            }
+//            final Process process = Runtime.getRuntime().exec(cmdarrayFinal);
+            final Process process = Runtime.getRuntime().exec(sb.toString());
             String prcsId = ProcessUtil.getProcessId(process);
             JobLogger.log("------------------DataX process id: " + prcsId);
             jobTmpFiles.put(prcsId, tmpFilePath);
@@ -71,7 +76,7 @@ public class ExecutorJobHandler extends IJobHandler {
             HandleProcessCallbackParam prcs = new HandleProcessCallbackParam(trigger.getLogId(), trigger.getLogDateTime(), prcsId);
             ProcessCallbackThread.pushCallBack(prcs);
             // log-thread
-            Thread futureThread = null;
+            Thread futureThread;
             FutureTask<LogStatistics> futureTask = new FutureTask<>(() -> analysisStatisticsLog(new BufferedInputStream(process.getInputStream())));
             futureThread = new Thread(futureTask);
             futureThread.start();
@@ -121,7 +126,7 @@ public class ExecutorJobHandler extends IJobHandler {
         if (variableMap == null || variableMap.size() < 1) {
             return param;
         }
-        Map<String, String> mapping = new HashMap<String, String>();
+        Map<String, String> mapping = new HashMap<>();
 
         Matcher matcher = VARIABLE_PATTERN.matcher(param);
         while (matcher.find()) {
