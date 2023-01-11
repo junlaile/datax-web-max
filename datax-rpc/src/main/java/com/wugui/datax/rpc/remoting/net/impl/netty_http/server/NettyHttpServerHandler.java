@@ -15,6 +15,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadPoolExecutor;
 
 
@@ -65,7 +66,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
                 stringBuffer.append("</ui>");
 
                 // response serialize
-                byte[] responseBytes = stringBuffer.toString().getBytes("UTF-8");
+                byte[] responseBytes = stringBuffer.toString().getBytes(StandardCharsets.UTF_8);
 
                 // response-write
                 writeResponse(ctx, keepAlive, responseBytes);

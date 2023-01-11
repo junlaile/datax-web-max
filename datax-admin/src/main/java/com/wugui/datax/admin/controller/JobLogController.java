@@ -14,6 +14,7 @@ import com.wugui.datax.admin.mapper.JobInfoMapper;
 import com.wugui.datax.admin.mapper.JobLogMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/log")
 @Api(tags = "任务运行日志接口")
+@Slf4j
 public class JobLogController {
     private static Logger logger = LoggerFactory.getLogger(JobLogController.class);
 
@@ -75,6 +77,7 @@ public class JobLogController {
     @ApiOperation("运行日志详情")
     public ReturnT<LogResult> logDetailCat(String executorAddress, long triggerTime, long logId, int fromLineNum) {
         try {
+            //获取执行器
             ExecutorBiz executorBiz = JobScheduler.getExecutorBiz(executorAddress);
             ReturnT<LogResult> logResult = executorBiz.log(triggerTime, logId, fromLineNum);
 
@@ -131,6 +134,7 @@ public class JobLogController {
     @ApiOperation("清理日志")
     public ReturnT<String> clearLog(int jobGroup, int jobId, int type) {
 
+        log.info("Someone scheduled log cleanup ");
         Date clearBeforeTime = null;
         int clearBeforeNum = 0;
         if (type == 1) {
@@ -159,7 +163,7 @@ public class JobLogController {
         do {
             logIds = jobLogMapper.findClearLogIds(jobGroup, jobId, clearBeforeTime, clearBeforeNum, 1000);
             if (logIds != null && logIds.size() > 0) {
-                jobLogMapper.clearLog(logIds);
+//                jobLogMapper.clearLog(logIds);
             }
         } while (logIds != null && logIds.size() > 0);
 

@@ -163,7 +163,7 @@ public class XxlRpcProviderFactory {
 	/**
 	 * init local rpc service map
 	 */
-	private Map<String, Object> serviceData = new HashMap<String, Object>();
+	private final Map<String, Object> serviceData = new HashMap<>();
 	public Map<String, Object> getServiceData() {
 		return serviceData;
 	}

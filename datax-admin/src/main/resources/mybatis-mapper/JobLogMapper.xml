@@ -181,7 +181,7 @@
 	
 	<delete id="delete" >
 		delete from job_log
-		WHERE job_id = #{jobId}
+		WHERE job_id = #{jobId} and 1=2
 	</delete>
 
     <!--<select id="triggerCountByDay" resultType="java.util.Map" >

@@ -4,6 +4,8 @@ import com.caucho.hessian.io.Hessian2Input;
 import com.caucho.hessian.io.Hessian2Output;
 import com.wugui.datax.rpc.serialize.Serializer;
 import com.wugui.datax.rpc.util.XxlRpcException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -15,6 +17,8 @@ import java.io.IOException;
  */
 public class HessianSerializer extends Serializer {
 
+	private static final Logger logger = LoggerFactory.getLogger(HessianSerializer.class);
+
 	@Override
 	public <T> byte[] serialize(T obj){
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -22,20 +26,16 @@ public class HessianSerializer extends Serializer {
 		try {
 			ho.writeObject(obj);
 			ho.flush();
-			byte[] result = os.toByteArray();
-			return result;
+			return os.toByteArray();
 		} catch (IOException e) {
 			throw new XxlRpcException(e);
 		} finally {
 			try {
 				ho.close();
-			} catch (IOException e) {
-				throw new XxlRpcException(e);
-			}
-			try {
 				os.close();
 			} catch (IOException e) {
-				throw new XxlRpcException(e);
+				logger.error("序列化关闭流失败！！！");
+				e.printStackTrace();
 			}
 		}
 
@@ -46,20 +46,16 @@ public class HessianSerializer extends Serializer {
 		ByteArrayInputStream is = new ByteArrayInputStream(bytes);
 		Hessian2Input hi = new Hessian2Input(is);
 		try {
-			Object result = hi.readObject();
-			return result;
+			return hi.readObject(clazz);
 		} catch (IOException e) {
 			throw new XxlRpcException(e);
 		} finally {
 			try {
 				hi.close();
-			} catch (Exception e) {
-				throw new XxlRpcException(e);
-			}
-			try {
 				is.close();
-			} catch (IOException e) {
-				throw new XxlRpcException(e);
+			} catch (Exception e) {
+				logger.error("反序列化关闭流失败！！！");
+				e.printStackTrace();
 			}
 		}
 	}
