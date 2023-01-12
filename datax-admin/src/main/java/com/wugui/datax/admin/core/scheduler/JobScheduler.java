@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentMap;
 public class JobScheduler {
     private static final Logger logger = LoggerFactory.getLogger(JobScheduler.class);
 
-
+    /**
+     * 开启定时调度器
+     */
     public void init() throws Exception {
         // init i18n
         initI18n();
@@ -46,7 +48,9 @@ public class JobScheduler {
         logger.info(">>>>>>>>> init datax-web admin success.");
     }
 
-
+    /**
+     * 销毁定时器
+     */
     public void destroy() throws Exception {
 
         // stop-schedule

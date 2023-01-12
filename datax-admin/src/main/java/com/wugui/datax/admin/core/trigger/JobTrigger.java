@@ -34,6 +34,7 @@ public class JobTrigger {
     private static Logger logger = LoggerFactory.getLogger(JobTrigger.class);
 
     /**
+     * 触发任务
      * trigger job
      *
      * @param jobId
@@ -176,6 +177,7 @@ public class JobTrigger {
                     address = group.getRegistryList().get(0);
                 }
             } else {
+                //获取执行地址
                 routeAddressResult = executorRouteStrategyEnum.getRouter().route(triggerParam, group.getRegistryList());
                 if (routeAddressResult.getCode() == ReturnT.SUCCESS_CODE) {
                     address = routeAddressResult.getContent();

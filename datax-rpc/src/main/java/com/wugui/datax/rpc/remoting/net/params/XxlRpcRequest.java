@@ -1,5 +1,7 @@
 package com.wugui.datax.rpc.remoting.net.params;
 
+import lombok.Data;
+
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -8,8 +10,9 @@ import java.util.Arrays;
  *
  * @author xuxueli 2015-10-29 19:39:12
  */
+@Data
 public class XxlRpcRequest implements Serializable {
-	private static final long serialVersionUID = 42L;
+	private static final long serialVersionUID = 459L;
 	
 	private String requestId;
 	private long createMillisTime;
@@ -22,70 +25,6 @@ public class XxlRpcRequest implements Serializable {
 
 	private String version;
 
-
-	public String getRequestId() {
-		return requestId;
-	}
-
-	public void setRequestId(String requestId) {
-		this.requestId = requestId;
-	}
-
-	public long getCreateMillisTime() {
-		return createMillisTime;
-	}
-
-	public void setCreateMillisTime(long createMillisTime) {
-		this.createMillisTime = createMillisTime;
-	}
-
-	public String getAccessToken() {
-		return accessToken;
-	}
-
-	public void setAccessToken(String accessToken) {
-		this.accessToken = accessToken;
-	}
-
-	public String getClassName() {
-		return className;
-	}
-
-	public void setClassName(String className) {
-		this.className = className;
-	}
-
-	public String getMethodName() {
-		return methodName;
-	}
-
-	public void setMethodName(String methodName) {
-		this.methodName = methodName;
-	}
-
-	public Class<?>[] getParameterTypes() {
-		return parameterTypes;
-	}
-
-	public void setParameterTypes(Class<?>[] parameterTypes) {
-		this.parameterTypes = parameterTypes;
-	}
-
-	public Object[] getParameters() {
-		return parameters;
-	}
-
-	public void setParameters(Object[] parameters) {
-		this.parameters = parameters;
-	}
-
-	public String getVersion() {
-		return version;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
-	}
 
 	@Override
 	public String toString() {

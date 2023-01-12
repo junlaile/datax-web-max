@@ -93,7 +93,7 @@ public class JobScheduleHelper {
 
                                 // 1、trigger
                                 JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, null);
-                                logger.debug(">>>>>>>>>>> datax-web, schedule push trigger : jobId = " + jobInfo.getId());
+                                logger.info(">>>>>>>>>>> datax-web, schedule push trigger : jobId = " + jobInfo.getId());
 
                                 // 2、fresh next
                                 refreshNextValidTime(jobInfo, new Date());

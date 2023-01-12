@@ -4,6 +4,7 @@ import com.wugui.datax.rpc.remoting.net.params.Beat;
 import com.wugui.datax.rpc.remoting.net.params.XxlRpcRequest;
 import com.wugui.datax.rpc.remoting.net.params.XxlRpcResponse;
 import com.wugui.datax.rpc.remoting.provider.XxlRpcProviderFactory;
+import com.wugui.datax.rpc.serialize.Serializer;
 import com.wugui.datax.rpc.util.ThrowableUtil;
 import com.wugui.datax.rpc.util.XxlRpcException;
 import io.netty.buffer.ByteBufUtil;
@@ -45,12 +46,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
         final boolean keepAlive = HttpUtil.isKeepAlive(msg);
 
         // do invoke
-        serverHandlerPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                process(ctx, uri, requestBytes, keepAlive);
-            }
-        });
+        serverHandlerPool.execute(() -> process(ctx, uri, requestBytes, keepAlive));
     }
 
     private void process(ChannelHandlerContext ctx, String uri, byte[] requestBytes, boolean keepAlive){
@@ -59,7 +55,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
             if ("/services".equals(uri)) {	// services mapping
 
                 // request
-                StringBuffer stringBuffer = new StringBuffer("<ui>");
+                StringBuilder stringBuffer = new StringBuilder("<ui>");
                 for (String serviceKey: xxlRpcProviderFactory.getServiceData().keySet()) {
                     stringBuffer.append("<li>").append(serviceKey).append(": ").append(xxlRpcProviderFactory.getServiceData().get(serviceKey)).append("</li>");
                 }
@@ -79,7 +75,11 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
                 }
 
                 // request deserialize
-                XxlRpcRequest xxlRpcRequest = (XxlRpcRequest) xxlRpcProviderFactory.getSerializerInstance().deserialize(requestBytes, XxlRpcRequest.class);
+                Serializer serializerInstance = xxlRpcProviderFactory.getSerializerInstance();
+                Object deserialize = serializerInstance.deserialize(requestBytes, XxlRpcRequest.class);
+                XxlRpcRequest xxlRpcRequest = (XxlRpcRequest) deserialize;
+                logger.info("xxlRpcRequest = {}" , xxlRpcRequest);
+
                 requestId = xxlRpcRequest.getRequestId();
 
                 // filter beat
@@ -98,8 +98,8 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
                 writeResponse(ctx, keepAlive, responseBytes);
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-
+            logger.error(e.getMessage(),e);
+            e.printStackTrace();
             // response error
             XxlRpcResponse xxlRpcResponse = new XxlRpcResponse();
             xxlRpcResponse.setRequestId(requestId);

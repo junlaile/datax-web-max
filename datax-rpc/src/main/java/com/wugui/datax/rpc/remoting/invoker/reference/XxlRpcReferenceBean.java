@@ -181,7 +181,9 @@ public class XxlRpcReferenceBean {
                     Object[] parameters = args;
 
                     // filter for generic
-                    if (className.equals(XxlRpcGenericService.class.getName()) && methodName.equals("invoke")) {
+                    //    Object invoke(String iface, String version, String method, String[] parameterTypes, Object[] args);
+                    if (className.equals(XxlRpcGenericService.class.getName())
+                            && methodName.equals("invoke")) {
 
                         Class<?>[] paramTypes = null;
                         if (args[3] != null) {
